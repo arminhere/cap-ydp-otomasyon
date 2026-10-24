@@ -1,0 +1,341 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  passwordHash     String?
+  role             String       @default("STUDENT") // COORDINATOR | STUDENT | DEPARTMENT_HEAD
+  status           String       @default("INVITED") // INVITED | ACTIVE | LOCKED | DISABLED
+  failedLoginCount Int          @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  student          Student?
+  tokens           AuthToken[]
+  sentMessages     Message[]    @relation("UserSentMessages")
+  auditActions     AuditLog[]   @relation("ActorAuditLogs")
+}
+
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  purpose   String    // INVITE | RESET
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+}
+
+model HomeDepartment {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  name       String
+  faculty    String     @default("Teknoloji Fakültesi")
+  allowedFor String     @default("BOTH") // CAP | YANDAL | BOTH
+  isActive   Boolean    @default(true)
+
+  students   Student[]
+  protocols  Protocol[]
+}
+
+model Student {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  mainStudentNo     String              @unique
+  programStudentNo  String              @unique
+  photoPath         String?
+  phone             String?
+  secondaryEmail    String?
+  homeDepartmentId  String
+  homeDepartment    HomeDepartment      @relation(fields: [homeDepartmentId], references: [id])
+  advisorName       String
+  admissionSemester Int                 @default(3) // 3, 4, 5 vb.
+  admissionGano     Float               // Başvuru anındaki Ana Dal GANO'su
+  admissionType     String              @default("ASIL") // ASIL | YEDEK
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  enrollments       ProgramEnrollment[]
+  documents         Document[]
+  messageThreads    MessageThread[]
+
+  @@index([mainStudentNo])
+  @@index([programStudentNo])
+}
+
+model Program {
+  id          String              @id @default(cuid())
+  type        String              // CAP | YANDAL
+  name        String
+  code        String              @unique
+  isActive    Boolean             @default(true)
+
+  enrollments ProgramEnrollment[]
+  protocols   Protocol[]
+  rules       ProgramRule[]
+}
+
+model Protocol {
+  id               String              @id @default(cuid())
+  programId        String
+  program          Program             @relation(fields: [programId], references: [id])
+  homeDepartmentId String?
+  homeDepartment   HomeDepartment?     @relation(fields: [homeDepartmentId], references: [id])
+  name             String
+  validFromYear    Int
+  version          Int                 @default(1)
+  totalAkts        Int
+  isPublished      Boolean             @default(false)
+  supersedesId     String?
+  publishedAt      DateTime?
+  createdAt        DateTime            @default(now())
+
+  items            ProtocolItem[]
+  enrollments      ProgramEnrollment[]
+
+  @@unique([programId, homeDepartmentId, version])
+}
+
+model Course {
+  id             String                @id @default(cuid())
+  code           String                @unique
+  name           String
+  akts           Int
+  theoryHours    Int                   @default(3)
+  practiceHours  Int                   @default(0)
+  isActive       Boolean               @default(true)
+
+  protocolItems  ProtocolItem[]
+  attempts       CourseAttempt[]
+  selectionItems CourseSelectionItem[]
+}
+
+model ProtocolItem {
+  id                  String                @id @default(cuid())
+  protocolId          String
+  protocol            Protocol              @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+  itemType            String                @default("COURSE") // COURSE | ELECTIVE_SLOT
+  courseId            String?
+  course              Course?               @relation(fields: [courseId], references: [id])
+  slotLabel           String?               // "5. YARIYIL TEKNİK SEÇMELİ DERS"
+  akts                Int
+  recommendedSemester Int
+  footnoteNo          Int?
+  sortOrder           Int                   @default(0)
+
+  selectionItems      CourseSelectionItem[]
+  attempts            CourseAttempt[]
+
+  @@index([protocolId])
+}
+
+model AcademicTerm {
+  id               String                   @id @default(cuid())
+  academicYear     String                   // "2025-2026"
+  semester         String                   // "GUZ" | "BAHAR"
+  startDate        DateTime
+  selectionOpenAt  DateTime
+  selectionCloseAt DateTime
+  isCurrent        Boolean                  @default(false)
+  createdAt        DateTime                 @default(now())
+
+  selectionRequests CourseSelectionRequest[]
+  courseAttempts    CourseAttempt[]
+  termStatuses      TermAcademicStatus[]
+
+  @@unique([academicYear, semester])
+}
+
+model ProgramEnrollment {
+  id                String                   @id @default(cuid())
+  studentId         String
+  student           Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  programId         String
+  program           Program                  @relation(fields: [programId], references: [id])
+  protocolId        String
+  protocol          Protocol                 @relation(fields: [protocolId], references: [id])
+  status            String                   @default("ACTIVE") // ACTIVE | FROZEN | REMOVAL_PENDING | REMOVED | COMPLETED | WITHDRAWN
+  statusReason      String?
+  emptyTermStreak   Int                      @default(0)
+  mainGanoBreaches  Int                      @default(0)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  selectionRequests CourseSelectionRequest[]
+  attempts          CourseAttempt[]
+  termStatuses      TermAcademicStatus[]
+  documents         Document[]
+
+  @@unique([studentId, programId])
+}
+
+model CourseSelectionRequest {
+  id               String                @id @default(cuid())
+  enrollmentId     String
+  enrollment       ProgramEnrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  termId           String
+  term             AcademicTerm          @relation(fields: [termId], references: [id])
+  status           String                @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED
+  totalAkts        Int                   @default(0)
+  submittedAt      DateTime?
+  decidedBy        String?
+  decidedAt        DateTime?
+  decisionNote     String?
+  formDocumentId   String?
+  signedDocumentId String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  items            CourseSelectionItem[]
+
+  @@unique([enrollmentId, termId])
+}
+
+model CourseSelectionItem {
+  id             String                 @id @default(cuid())
+  requestId      String
+  request        CourseSelectionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  protocolItemId String
+  protocolItem   ProtocolItem           @relation(fields: [protocolItemId], references: [id])
+  courseId       String
+  course         Course                 @relation(fields: [courseId], references: [id])
+
+  @@unique([requestId, protocolItemId])
+}
+
+model CourseAttempt {
+  id                 String            @id @default(cuid())
+  enrollmentId       String
+  enrollment         ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  protocolItemId     String
+  protocolItem       ProtocolItem      @relation(fields: [protocolItemId], references: [id])
+  courseId           String
+  course             Course            @relation(fields: [courseId], references: [id])
+  termId             String
+  term               AcademicTerm      @relation(fields: [termId], references: [id])
+  status             String            @default("ENROLLED") // ENROLLED | PASSED | FAILED | EXEMPT | WITHDRAWN
+  letterGrade        String?           // "AA", "BA", "FF" vb.
+  numericGrade       Float?
+  evidenceDocumentId String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  createdAt          DateTime          @default(now())
+
+  @@index([enrollmentId, courseId])
+  @@index([enrollmentId, termId])
+}
+
+model TermAcademicStatus {
+  id             String            @id @default(cuid())
+  enrollmentId   String
+  enrollment     ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  termId         String
+  term           AcademicTerm      @relation(fields: [termId], references: [id])
+  mainGano       Float?            // Ana Dal GANO (yalnızca koordinatör girer)
+  programGano    Float?            // ÇAP / YDP GANO
+  programGano100 Float?            // Varsa 100'lük karşılığı
+  sourceNote     String?           // örn: "Öğrenci işleri onaylı transkript belgesi"
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  createdAt      DateTime          @default(now())
+
+  @@unique([enrollmentId, termId])
+}
+
+model Document {
+  id             String             @id @default(cuid())
+  studentId      String
+  student        Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  enrollmentId   String?
+  enrollment     ProgramEnrollment? @relation(fields: [enrollmentId], references: [id])
+  termId         String?
+  documentType   String             // TRANSCRIPT | STUDENT_CERTIFICATE | MAIN_GANO_DOCUMENT | PETITION | PROTOCOL_SIGNED | COURSE_FORM_SIGNED | EXEMPTION_FORM | FREEZE_DECISION | OTHER
+  label          String
+  originalName   String
+  mimeType       String
+  sizeBytes      Int
+  sha256         String
+  storedPath     String?            // Disk yolu
+  contentBytes   Bytes?             // DB içi kalıcı saklama (özellikle Vercel serverless için)
+  isGenerated    Boolean            @default(false)
+  approvalStatus String             @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  supersedesId   String?
+  uploadedBy     String
+  uploadedAt     DateTime           @default(now())
+
+  @@index([studentId, documentType])
+}
+
+model MessageThread {
+  id        String    @id @default(cuid())
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   String
+  status    String    @default("OPEN") // OPEN | CLOSED
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  messages  Message[]
+}
+
+model Message {
+  id                   String        @id @default(cuid())
+  threadId             String
+  thread               MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId             String
+  sender               User          @relation("UserSentMessages", fields: [senderId], references: [id])
+  body                 String
+  attachmentDocumentId String?
+  isRead               Boolean       @default(false)
+  createdAt            DateTime      @default(now())
+
+  @@index([threadId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  action     String   // APPROVE_SELECTION, UPDATE_GRADE, REJECT_DOCUMENT vb.
+  entityType String   // CourseSelection, Document, CourseAttempt vb.
+  entityId   String
+  beforeJson String?
+  afterJson  String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+}
+
+model ProgramRule {
+  id            String   @id @default(cuid())
+  programId     String
+  program       Program  @relation(fields: [programId], references: [id])
+  ruleKey       String   // MIN_MAIN_GANO_ENTRY, DISMISSAL_MAIN_GANO_THRESHOLD, vb.
+  value         Float
+  description   String
+  sourceArticle String   // m.5(d), m.9(e)
+  effectiveFrom DateTime @default(now())
+
+  @@unique([programId, ruleKey])
+}
