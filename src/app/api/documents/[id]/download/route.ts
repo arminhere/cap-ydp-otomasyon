@@ -27,12 +27,16 @@ export async function GET(
     });
   }
 
-  // Coordinator and Department Head can access authorized documents
+  const rawName = document.originalName || "belge.bin";
+  const asciiFallback = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const utf8Name = encodeURIComponent(rawName);
+
+  // Return binary response with RFC 6266 / RFC 5987 compliant Content-Disposition
   return new NextResponse(new Uint8Array(document.contentBytes), {
     status: 200,
     headers: {
       "Content-Type": document.mimeType || "application/octet-stream",
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(document.originalName)}"`,
+      "Content-Disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Name}`,
       "Content-Length": String(document.contentBytes.length),
       "Cache-Control": "private, no-cache, no-store, must-revalidate",
     },

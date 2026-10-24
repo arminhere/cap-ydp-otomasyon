@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { authenticateUser } from "@/lib/auth";
-import { setSessionCookie, clearSessionCookie } from "@/lib/session";
+import { authenticateUser, verifyPassword, hashPassword } from "@/lib/auth";
+import { setSessionCookie, clearSessionCookie, getCurrentUser } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
 
 const loginSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi giriniz."),
@@ -65,4 +66,65 @@ export async function loginAction(
 export async function logoutAction() {
   await clearSessionCookie();
   redirect("/login");
+}
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Mevcut şifrenizi giriniz."),
+    newPassword: z.string().min(6, "Yeni şifre en az 6 karakter olmalıdır."),
+    confirmPassword: z.string().min(1, "Yeni şifre tekrarı zorunludur."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Yeni şifreler birbiriyle eşleşmiyor.",
+    path: ["confirmPassword"],
+  });
+
+export async function changePasswordAction(
+  prevState: ActionState | undefined,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "İşlem yapabilmek için oturum açmanız gerekmektedir." };
+  }
+
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message };
+  }
+
+  const dbUser = await db.user.findUnique({ where: { id: user.id } });
+  if (!dbUser || !dbUser.passwordHash) {
+    return { error: "Kullanıcı kaydı bulunamadı." };
+  }
+
+  const isCurrentValid = await verifyPassword(
+    parsed.data.currentPassword,
+    dbUser.passwordHash
+  );
+
+  if (!isCurrentValid) {
+    return { error: "Mevcut şifrenizi hatalı girdiniz." };
+  }
+
+  const newHash = await hashPassword(parsed.data.newPassword);
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { passwordHash: newHash },
+  });
+
+  await logAudit({
+    actorId: user.id,
+    action: "CHANGE_PASSWORD",
+    entityType: "User",
+    entityId: user.id,
+  });
+
+  return { success: true };
 }

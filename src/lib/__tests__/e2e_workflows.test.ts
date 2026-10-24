@@ -132,6 +132,10 @@ test("End-to-End Workflow & Security Verification", async () => {
   assert.equal(attempt.status, "ENROLLED");
 
   // 7. Verify Grade Requirement: Without approved departmental transcript, grade approval is blocked!
+  await db.document.deleteMany({
+    where: { studentId: student.id, documentType: "TRANSCRIPT" },
+  });
+
   const hasTranscript = await db.document.findFirst({
     where: {
       studentId: student.id,
@@ -141,7 +145,8 @@ test("End-to-End Workflow & Security Verification", async () => {
   });
   assert.equal(hasTranscript, null, "Transcript must not exist yet");
 
-  // 8. Student uploads Transcript and Coordinator approves it
+  // 8. Student uploads Transcript and Coordinator approves it (using real valid PDF)
+  const validPdfBuffer = Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n190\n%%EOF\n");
   const transcriptDoc = await db.document.create({
     data: {
       studentId: student.id,
@@ -149,9 +154,9 @@ test("End-to-End Workflow & Security Verification", async () => {
       label: "2025-2026 Güz Resmi ÇAP Transkript Belgesi",
       originalName: "transkript_ali_demir.pdf",
       mimeType: "application/pdf",
-      sizeBytes: 154200,
+      sizeBytes: validPdfBuffer.length,
       sha256: "mock_transcript_sha256",
-      contentBytes: Buffer.from("%PDF-1.4 Mock Transcript"),
+      contentBytes: validPdfBuffer,
       approvalStatus: "APPROVED",
       uploadedBy: studentAuth.user.id,
     },

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import PizZip from "pizzip";
 import { generateForm01Docx } from "../docx";
 
-test("FORM01 docx generation with student, term and course data", async () => {
+test("FORM01 docx generation produces valid, openable Word document", async () => {
   const testData = {
     programStudentNo: "231202099",
     studentName: "Ali Demir",

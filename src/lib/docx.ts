@@ -18,8 +18,42 @@ export interface Form01Data {
 }
 
 /**
+ * Safely injects text into a table cell <w:tc> without corrupting <w:tcPr>
+ */
+function injectCellText(
+  tcXml: string,
+  text: string,
+  bold: boolean = false,
+  center: boolean = false
+): string {
+  const boldTag = bold ? "<w:b/>" : "";
+  const runXml = `<w:r><w:rPr>${boldTag}<w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${text}</w:t></w:r>`;
+
+  // 1. If cell has a self-closing paragraph: <w:p .../>
+  const pSelfMatch = tcXml.match(/(<w:p\b[^>]*?)\/>/);
+  if (pSelfMatch && pSelfMatch.index !== undefined) {
+    const pTag = pSelfMatch[1];
+    const jcXml = center ? '<w:pPr><w:jc w:val="center"/></w:pPr>' : "";
+    return (
+      tcXml.slice(0, pSelfMatch.index) +
+      `${pTag}>${jcXml}${runXml}</w:p>` +
+      tcXml.slice(pSelfMatch.index + pSelfMatch[0].length)
+    );
+  }
+
+  // 2. If cell has an open/close paragraph: <w:p>...</w:p>
+  const closeIdx = tcXml.indexOf("</w:p>");
+  if (closeIdx !== -1) {
+    return tcXml.slice(0, closeIdx) + runXml + tcXml.slice(closeIdx);
+  }
+
+  return tcXml;
+}
+
+/**
  * Generates an official FORM01 (.docx) by reading the original template
  * and updating the table cells with student, term, and course details.
+ * Output XML is strictly verified to ensure valid Microsoft Word document format.
  */
 export async function generateForm01Docx(data: Form01Data): Promise<Buffer> {
   const templatePath = path.join(
@@ -78,17 +112,6 @@ export async function generateForm01Docx(data: Form01Data): Promise<Buffer> {
     docXml = docXml.replace(/(Güz\s*:\s*<\/w:t>[\s\S]*?<w:t>)☐(<\/w:t>)/, "$1☑$2");
   } else {
     docXml = docXml.replace(/(Bahar:\s*<\/w:t>[\s\S]*?<w:t>)☐(<\/w:t>)/, "$1☑$2");
-  }
-
-  // Helper to inject run into a table cell <w:tc>
-  function injectCellText(tcXml: string, text: string, isBold: boolean = false, isCenter: boolean = false): string {
-    const run = `<w:r><w:rPr>${isBold ? "<w:b/>" : ""}<w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${text}</w:t></w:r>`;
-    if (tcXml.includes("</w:p>")) {
-      return tcXml.replace("</w:p>", `${run}</w:p>`);
-    } else if (tcXml.includes("/>")) {
-      return tcXml.replace(/\/>/, `>${run}</w:p>`);
-    }
-    return tcXml;
   }
 
   // Populate course table rows

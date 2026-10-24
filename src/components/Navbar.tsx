@@ -14,6 +14,7 @@ import {
   MessageSquare,
   PieChart,
   ShieldAlert,
+  KeyRound,
 } from "lucide-react";
 
 export async function Navbar() {
@@ -121,8 +122,8 @@ export async function Navbar() {
             )}
           </nav>
 
-          {/* User Badge & Logout */}
-          <div className="flex items-center gap-3">
+          {/* User Badge, Password Change & Logout */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-semibold text-slate-200">{user.email}</p>
               <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -135,6 +136,15 @@ export async function Navbar() {
                 {user.role === "COORDINATOR" ? "KOORDİNATÖR" : user.role === "STUDENT" ? "ÖĞRENCİ" : "BÖLÜM BAŞKANI"}
               </span>
             </div>
+
+            <Link
+              href="/sifre-degistir"
+              title="Şifre Değiştir"
+              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition border border-slate-700/60 flex items-center gap-1 text-xs"
+            >
+              <KeyRound className="w-4 h-4 text-amber-400" />
+              <span className="hidden lg:inline">Şifre Değiştir</span>
+            </Link>
 
             <form action={logoutAction}>
               <button
