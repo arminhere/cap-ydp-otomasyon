@@ -34,8 +34,8 @@ This application is a specialized web platform engineered for the Computer Engin
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/arminhere/cap-ydp-ototomasyon.git
-cd cap-ydp-ototomasyon
+git clone https://github.com/arminhere/cap-ydp-otomasyon.git
+cd cap-ydp-otomasyon
 ```
 
 ### 2. Install Dependencies
