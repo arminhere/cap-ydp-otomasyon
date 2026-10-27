@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { signSession, verifySession, SessionUser, UserRole } from "./auth";
 
 const AUTH_COOKIE_NAME = "bmu2_session";
@@ -38,15 +39,16 @@ export async function clearSessionCookie() {
 }
 
 /**
- * Enforce role on the server-side. Throws error if unauthorized.
+ * Enforce role on the server-side. Redirects to /login if unauthenticated or forbidden.
  */
 export async function requireUserWithRole(allowedRoles: UserRole[]): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error("UNAUTHORIZED: Oturum açmanız gerekmektedir.");
+    redirect("/login");
   }
   if (!allowedRoles.includes(user.role)) {
-    throw new Error("FORBIDDEN: Bu işlem için yetkiniz bulunmamaktadır.");
+    redirect("/login");
   }
   return user;
 }
+

@@ -1,12 +1,12 @@
-import { getCurrentUser } from "@/lib/session";
+import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
 import { FileCheck, UploadCloud, Download, AlertCircle, FileText } from "lucide-react";
 import { uploadDocumentAction } from "@/actions/documentActions";
 
 export default async function StudentDocumentsPage() {
-  const user = await getCurrentUser();
+  const user = await requireUserWithRole(["STUDENT"]);
   const student = await db.student.findUnique({
-    where: { userId: user?.id },
+    where: { userId: user.id },
     include: {
       documents: {
         orderBy: { uploadedAt: "desc" },

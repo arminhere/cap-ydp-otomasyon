@@ -1,12 +1,12 @@
-import { getCurrentUser } from "@/lib/session";
+import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
 import { MessageSquare, Send } from "lucide-react";
 import { sendMessageAction } from "@/actions/messageActions";
 
 export default async function StudentMessagesPage() {
-  const user = await getCurrentUser();
+  const user = await requireUserWithRole(["STUDENT"]);
   const student = await db.student.findUnique({
-    where: { userId: user?.id },
+    where: { userId: user.id },
     include: {
       messageThreads: {
         include: {

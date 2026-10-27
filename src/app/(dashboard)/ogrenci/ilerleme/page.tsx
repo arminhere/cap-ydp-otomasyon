@@ -1,11 +1,11 @@
-import { getCurrentUser } from "@/lib/session";
+import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PieChart, CheckCircle2, XCircle, Clock, Award, BookOpen } from "lucide-react";
 
 export default async function StudentProgressPage() {
-  const user = await getCurrentUser();
+  const user = await requireUserWithRole(["STUDENT"]);
   const student = await db.student.findUnique({
-    where: { userId: user?.id },
+    where: { userId: user.id },
     include: {
       enrollments: {
         include: {

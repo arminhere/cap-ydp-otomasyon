@@ -1,12 +1,12 @@
-import { getCurrentUser } from "@/lib/session";
+import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
 import { FileText, CheckCircle2, Clock, Download, AlertCircle, AlertTriangle } from "lucide-react";
 import { submitCourseSelectionAction } from "@/actions/courseSelectionActions";
 
 export default async function StudentCourseSelectionPage() {
-  const user = await getCurrentUser();
+  const user = await requireUserWithRole(["STUDENT"]);
   const student = await db.student.findUnique({
-    where: { userId: user?.id },
+    where: { userId: user.id },
     include: {
       homeDepartment: true,
       enrollments: {
