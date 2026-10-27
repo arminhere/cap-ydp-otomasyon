@@ -36,3 +36,10 @@ next-env.d.ts
 # SQLite file
 *.db
 *.db-journal
+
+# Confidential professor instructions and design documents
+long.pdf
+bmu_2.txt
+bmu_2*.txt
+emails from professor.txt
+
