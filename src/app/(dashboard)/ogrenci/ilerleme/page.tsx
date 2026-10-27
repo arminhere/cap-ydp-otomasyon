@@ -1,12 +1,13 @@
 import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
-import { PieChart, CheckCircle2, XCircle, Clock, Award, BookOpen } from "lucide-react";
+import Link from "next/link";
 
 export default async function StudentProgressPage() {
   const user = await requireUserWithRole(["STUDENT"]);
   const student = await db.student.findUnique({
     where: { userId: user.id },
     include: {
+      homeDepartment: true,
       enrollments: {
         include: {
           program: true,
@@ -29,7 +30,35 @@ export default async function StudentProgressPage() {
 
   const enrollment = student?.enrollments[0];
   if (!enrollment) {
-    return <div>Kayıt bulunamadı.</div>;
+    return (
+      <div className="py-8">
+        <p className="text-slate-600">Aktif ÇAP veya Yan Dal kaydı bulunamadı.</p>
+      </div>
+    );
+  }
+
+  // Active term enrolled courses
+  const activeTerm = await db.academicTerm.findFirst({
+    where: { isCurrent: true },
+  });
+
+  const enrolledCourseCodes = new Set<string>();
+  if (activeTerm) {
+    const activeReq = await db.courseSelectionRequest.findFirst({
+      where: {
+        enrollmentId: enrollment.id,
+        termId: activeTerm.id,
+        status: "APPROVED",
+      },
+      include: {
+        items: { include: { course: true } },
+      },
+    });
+    if (activeReq) {
+      activeReq.items.forEach((item) => {
+        if (item.course?.code) enrolledCourseCodes.add(item.course.code);
+      });
+    }
   }
 
   // Calculate Passed Courses and AKTS
@@ -40,106 +69,146 @@ export default async function StudentProgressPage() {
     .filter((item) => item.course && passedCourseCodes.has(item.course.code))
     .reduce((sum, item) => sum + item.akts, 0);
 
+  const enrolledAkts = enrollment.protocol.items
+    .filter((item) => item.course && enrolledCourseCodes.has(item.course.code))
+    .reduce((sum, item) => sum + item.akts, 0);
+
   const totalRequiredAkts = enrollment.protocol.totalAkts;
   const remainingAkts = Math.max(0, totalRequiredAkts - passedAkts);
-  const completionPercentage = Math.round((passedAkts / totalRequiredAkts) * 100);
+
+  // Check if student has FORM01 generated to link to
+  const form01Doc = await db.document.findFirst({
+    where: {
+      studentId: student.id,
+      documentType: "COURSE_FORM_SIGNED",
+    },
+    orderBy: { uploadedAt: "desc" },
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <PieChart className="w-6 h-6 text-emerald-600" /> ÇAP Mezuniyet ve Akademik İlerleme Matrisi
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {enrollment.protocol.name} kapsamındaki ders tamamlama durumunuzu ve kalan AKTS kredilerinizi buradan izleyebilirsiniz.
-        </p>
-      </div>
-
-      {/* Progress Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 block font-medium">Toplam Gerekli Kredi</span>
-          <span className="text-2xl font-bold text-slate-800">{totalRequiredAkts} AKTS</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 block font-medium">Başarıyla Tamamlanan</span>
-          <span className="text-2xl font-bold text-emerald-600">{passedAkts} AKTS</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 block font-medium">Kalan Kredi Yükü</span>
-          <span className="text-2xl font-bold text-amber-600">{remainingAkts} AKTS</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 block font-medium">Tamamlanma Oranı</span>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xl font-bold text-blue-700">%{completionPercentage}</span>
-            <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full"
-                style={{ width: `${completionPercentage}%` }}
-              />
-            </div>
-          </div>
+    <div className="space-y-6 max-w-6xl mx-auto py-2">
+      {/* Page Title & Subtitle */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">İlerleme</h1>
+        <div className="flex items-center gap-2 mt-1.5 text-sm text-slate-600">
+          <span>
+            {enrollment.program.type === "CAP" ? "Çift Anadal" : "Yandal"} ·{" "}
+            {student.homeDepartment?.name || "Mühendislik"} → Bilgisayar Mühendisliği · Durum:
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-slate-300 text-slate-700 bg-white">
+            {enrollment.status === "ACTIVE" ? "Aktif" : "Pasif"}
+          </span>
         </div>
       </div>
 
-      {/* Protocol Matrix Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
-        <h2 className="text-base font-semibold text-slate-800">
-          Protokol Ders Başarı Matrisi
-        </h2>
+      {/* 4 Metric Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-lg border border-slate-200">
+          <span className="text-xs text-slate-500 block font-normal">Gerekli</span>
+          <span className="text-2xl font-bold text-slate-900 mt-1 block">
+            {totalRequiredAkts} AKTS
+          </span>
+        </div>
 
-        <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden text-sm">
-          {enrollment.protocol.items.map((item) => {
-            const courseCode = item.course?.code;
-            const courseAttempts = enrollment.attempts.filter((a) => a.course.code === courseCode);
-            const latestAttempt = courseAttempts[0];
+        <div className="bg-white p-5 rounded-lg border border-slate-200">
+          <span className="text-xs text-slate-500 block font-normal">Geçilen / Muaf</span>
+          <span className="text-2xl font-bold text-slate-900 mt-1 block">
+            [{passedAkts} AKTS]
+          </span>
+        </div>
 
-            let statusColor = "bg-slate-100 text-slate-600 border-slate-200";
-            let statusText = "Henüz Alınmadı";
+        <div className="bg-white p-5 rounded-lg border border-slate-200">
+          <span className="text-xs text-slate-500 block font-normal">Bu dönem kayıtlı</span>
+          <span className="text-2xl font-bold text-slate-900 mt-1 block">
+            {enrolledAkts > 0 ? `[${enrolledAkts} AKTS]` : "[—]"}
+          </span>
+        </div>
 
-            if (latestAttempt) {
-              if (latestAttempt.status === "PASSED") {
-                statusColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
-                statusText = `GEÇTİ (${latestAttempt.letterGrade || "Onaylı"})`;
-              } else if (latestAttempt.status === "FAILED") {
-                statusColor = "bg-red-100 text-red-800 border-red-300";
-                statusText = `KALDI (${latestAttempt.letterGrade || "FF"})`;
-              } else {
-                statusColor = "bg-amber-100 text-amber-800 border-amber-300";
-                statusText = "Kayıtlı (Dönem İçi)";
-              }
-            }
+        <div className="bg-white p-5 rounded-lg border border-slate-200">
+          <span className="text-xs text-slate-500 block font-normal">Kalan</span>
+          <span className="text-2xl font-bold text-slate-900 mt-1 block">
+            [{remainingAkts} AKTS]
+          </span>
+        </div>
+      </div>
 
-            return (
-              <div key={item.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50 transition">
-                <div>
-                  <div className="font-semibold text-slate-900">
-                    {item.course ? `${item.course.code} - ${item.course.name}` : item.slotLabel}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {item.recommendedSemester}. Yarıyıl {item.footnoteNo ? `· (Özel Şart Dipnot ${item.footnoteNo})` : ""}
-                    {courseAttempts.length > 1 && (
-                      <span className="text-blue-600 font-semibold ml-2">
-                        · {courseAttempts.length} defa alındı (Tekrar dersi)
+      {/* Protocol Curriculum Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-white">
+                <th className="py-3 px-4 font-semibold text-slate-900 w-32">Ders kodu</th>
+                <th className="py-3 px-4 font-semibold text-slate-900">Ders adı</th>
+                <th className="py-3 px-4 font-semibold text-slate-900 w-24">AKTS</th>
+                <th className="py-3 px-4 font-semibold text-slate-900 w-28">Harf notu</th>
+                <th className="py-3 px-4 font-semibold text-slate-900 w-36">Durum</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {enrollment.protocol.items.map((item) => {
+                const course = item.course;
+                const courseCode = course?.code;
+                const courseAttempts = enrollment.attempts.filter(
+                  (a) => a.course.code === courseCode
+                );
+                const latestAttempt = courseAttempts[0];
+
+                let pillText = "Henüz alınmadı";
+                let letterGradeText = "—";
+
+                if (courseCode && enrolledCourseCodes.has(courseCode)) {
+                  pillText = "Kayıtlı";
+                } else if (latestAttempt) {
+                  letterGradeText = latestAttempt.letterGrade || "—";
+                  if (latestAttempt.status === "PASSED") {
+                    pillText = "Geçti";
+                  } else if (latestAttempt.status === "FAILED") {
+                    pillText = "Kaldı";
+                  } else {
+                    pillText = "Kayıtlı";
+                  }
+                } else if (item.footnoteNo) {
+                  // If conditional footnote exemption
+                  pillText = "Henüz alınmadı";
+                }
+
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/70 transition">
+                    <td className="py-3 px-4 text-slate-800 font-mono text-xs">
+                      {courseCode || "[Kod]"}
+                    </td>
+                    <td className="py-3 px-4 text-slate-800 font-medium">
+                      {course ? course.name : item.slotLabel || "[Teknik seçmeli yuvası]"}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      [{item.akts}]
+                    </td>
+                    <td className="py-3 px-4 text-slate-800 font-medium">
+                      {letterGradeText}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="inline-block px-2.5 py-0.5 rounded text-xs text-slate-700 border border-slate-300 bg-white">
+                        {pillText}
                       </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-slate-500">{item.akts} AKTS</span>
-                  <span className={`px-2.5 py-1 rounded text-xs font-bold border ${statusColor}`}>
-                    {statusText}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      {/* Bottom Link & Disclaimer */}
+      <div className="pt-1 text-sm text-slate-500">
+        <Link
+          href={form01Doc ? `/api/documents/${form01Doc.id}/download` : "/ogrenci/ders-secimi"}
+          className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+        >
+          FORM01 indir
+        </Link>
+        <span className="text-slate-400"> · Yer tutucular [ ] örnek amaçlıdır.</span>
       </div>
     </div>
   );

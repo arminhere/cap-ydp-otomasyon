@@ -9,9 +9,9 @@ export default async function HomePage() {
   }
 
   if (user.role === "COORDINATOR") {
-    redirect("/koordinator/ogrenciler");
+    redirect("/koordinator");
   } else if (user.role === "STUDENT") {
-    redirect("/ogrenci/ders-secimi");
+    redirect("/ogrenci/ilerleme");
   } else if (user.role === "DEPARTMENT_HEAD") {
     redirect("/bolum-baskani/genel-bakis");
   } else {

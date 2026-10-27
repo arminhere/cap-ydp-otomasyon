@@ -1,158 +1,117 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { logoutAction } from "@/actions/authActions";
-import {
-  GraduationCap,
-  Users,
-  CheckSquare,
-  BookOpen,
-  Calendar,
-  Settings,
-  LogOut,
-  FileText,
-  FileCheck,
-  MessageSquare,
-  PieChart,
-  ShieldAlert,
-  KeyRound,
-} from "lucide-react";
+import { db } from "@/lib/db";
 
 export async function Navbar() {
   const user = await getCurrentUser();
   if (!user) return null;
 
+  let displayName = user.email;
+  if (user.role === "STUDENT") {
+    const student = await db.student.findUnique({
+      where: { userId: user.id },
+      select: { firstName: true, lastName: true },
+    });
+    if (student) {
+      displayName = `${student.firstName} ${student.lastName}`;
+    }
+  }
+
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo & System Brand */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <Link href="/" className="font-bold text-base hover:text-blue-300 transition">
-                ÇAP / YDP Takip Sistemi
-              </Link>
-              <p className="text-[11px] text-slate-400">Selçuk Üniversitesi Bilgisayar Mühendisliği</p>
-            </div>
+        <div className="flex items-center justify-between h-14">
+          {/* Brand & Left Navigation */}
+          <div className="flex items-center gap-8">
+            <Link href="/" className="font-bold text-slate-900 text-base tracking-tight hover:text-blue-600 transition">
+              ÇAP / Yan Dal Paneli
+            </Link>
+
+            <nav className="hidden md:flex items-center space-x-6 text-sm">
+              {user.role === "COORDINATOR" && (
+                <>
+                  <Link href="/koordinator" className="text-blue-600 font-semibold hover:text-blue-700">
+                    Pano
+                  </Link>
+                  <Link href="/koordinator/ogrenciler" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Öğrenciler
+                  </Link>
+                  <Link href="/koordinator/onaylar" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Belgeler
+                  </Link>
+                  <Link href="/koordinator/protokoller" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Protokoller
+                  </Link>
+                  <Link href="/yonergeler" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Yönergeler
+                  </Link>
+                  <Link href="/koordinator/ayarlar" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Yönetim
+                  </Link>
+                </>
+              )}
+
+              {user.role === "STUDENT" && (
+                <>
+                  <Link href="/ogrenci/ilerleme" className="text-blue-600 font-semibold hover:text-blue-700">
+                    İlerleme
+                  </Link>
+                  <Link href="/ogrenci/belgelerim" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Belgelerim
+                  </Link>
+                  <Link href="/ogrenci/ders-secimi" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Ders Seç
+                  </Link>
+                  <Link href="/ogrenci/mesajlar" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Mesajlar
+                  </Link>
+                  <Link href="/yonergeler" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Yönergeler
+                  </Link>
+                </>
+              )}
+
+              {user.role === "DEPARTMENT_HEAD" && (
+                <>
+                  <Link href="/bolum-baskani/genel-bakis" className="text-blue-600 font-semibold hover:text-blue-700">
+                    Pano
+                  </Link>
+                  <Link href="/koordinator/ogrenciler" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Öğrenciler
+                  </Link>
+                  <Link href="/bolum-baskani/denetim" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Belgeler & Denetim
+                  </Link>
+                  <Link href="/yonergeler" className="text-slate-600 hover:text-blue-600 font-medium">
+                    Yönergeler
+                  </Link>
+                </>
+              )}
+            </nav>
           </div>
 
-          {/* Navigation Links based on Role */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {user.role === "COORDINATOR" && (
-              <>
-                <Link
-                  href="/koordinator/ogrenciler"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <Users className="w-4 h-4 text-blue-400" /> Öğrenciler
-                </Link>
-                <Link
-                  href="/koordinator/onaylar"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <CheckSquare className="w-4 h-4 text-amber-400" /> Onay Merkezi
-                </Link>
-                <Link
-                  href="/koordinator/protokoller"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <BookOpen className="w-4 h-4 text-emerald-400" /> Protokoller
-                </Link>
-                <Link
-                  href="/koordinator/donemler"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <Calendar className="w-4 h-4 text-purple-400" /> Dönemler
-                </Link>
-                <Link
-                  href="/koordinator/ayarlar"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <Settings className="w-4 h-4 text-slate-400" /> Kurallar
-                </Link>
-              </>
-            )}
-
-            {user.role === "STUDENT" && (
-              <>
-                <Link
-                  href="/ogrenci/ders-secimi"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <FileText className="w-4 h-4 text-blue-400" /> Ders Seçimi
-                </Link>
-                <Link
-                  href="/ogrenci/ilerleme"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <PieChart className="w-4 h-4 text-emerald-400" /> İlerleme Matrisi
-                </Link>
-                <Link
-                  href="/ogrenci/belgelerim"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <FileCheck className="w-4 h-4 text-amber-400" /> Belgelerim
-                </Link>
-                <Link
-                  href="/ogrenci/mesajlar"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <MessageSquare className="w-4 h-4 text-purple-400" /> Mesajlar
-                </Link>
-              </>
-            )}
-
-            {user.role === "DEPARTMENT_HEAD" && (
-              <>
-                <Link
-                  href="/bolum-baskani/genel-bakis"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <PieChart className="w-4 h-4 text-purple-400" /> Bölüm İstatistikleri
-                </Link>
-                <Link
-                  href="/bolum-baskani/denetim"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                >
-                  <ShieldAlert className="w-4 h-4 text-red-400" /> Denetim Kayıtları (Audit)
-                </Link>
-              </>
-            )}
-          </nav>
-
-          {/* User Badge, Password Change & Logout */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-semibold text-slate-200">{user.email}</p>
-              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                user.role === "COORDINATOR"
-                  ? "bg-blue-900/60 text-blue-300 border border-blue-700"
-                  : user.role === "STUDENT"
-                  ? "bg-emerald-900/60 text-emerald-300 border border-emerald-700"
-                  : "bg-purple-900/60 text-purple-300 border border-purple-700"
-              }`}>
-                {user.role === "COORDINATOR" ? "KOORDİNATÖR" : user.role === "STUDENT" ? "ÖĞRENCİ" : "BÖLÜM BAŞKANI"}
-              </span>
-            </div>
+          {/* User Role Indicator & Logout */}
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-slate-700 font-medium">
+              {user.role === "COORDINATOR" && "Koordinatör"}
+              {user.role === "STUDENT" && `${displayName} · Öğrenci`}
+              {user.role === "DEPARTMENT_HEAD" && "Bölüm Başkanı · Salt okunur"}
+            </span>
 
             <Link
               href="/sifre-degistir"
-              title="Şifre Değiştir"
-              className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition border border-slate-700/60 flex items-center gap-1 text-xs"
+              className="text-xs text-slate-500 hover:text-slate-800 underline transition"
             >
-              <KeyRound className="w-4 h-4 text-amber-400" />
-              <span className="hidden lg:inline">Şifre Değiştir</span>
+              Şifre
             </Link>
 
-            <form action={logoutAction}>
+            <form action={logoutAction} className="inline">
               <button
                 type="submit"
-                title="Çıkış Yap"
-                className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition"
+                className="text-blue-600 hover:text-blue-800 font-medium transition cursor-pointer"
               >
-                <LogOut className="w-5 h-5" />
+                Çıkış
               </button>
             </form>
           </div>
