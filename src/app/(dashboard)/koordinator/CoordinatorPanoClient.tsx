@@ -88,10 +88,10 @@ export function CoordinatorPanoClient({ pendingApprovals, warnings, students }: 
               {warnings.map((w) => (
                 <div key={w.id} className="flex items-start gap-2">
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[11px] font-medium border shrink-0 ${
+                    className={`px-1.5 py-0.5 rounded text-[11px] font-semibold border shrink-0 ${
                       w.level === "Kırmızı"
-                        ? "border-slate-300 text-slate-700 bg-white"
-                        : "border-slate-300 text-slate-700 bg-white"
+                        ? "bg-red-50 text-red-700 border-red-300"
+                        : "bg-amber-50 text-amber-700 border-amber-300"
                     }`}
                   >
                     {w.level}
@@ -173,7 +173,13 @@ export function CoordinatorPanoClient({ pendingApprovals, warnings, students }: 
                     {s.warning === "—" ? (
                       <span className="text-slate-400">—</span>
                     ) : (
-                      <span className="inline-block px-2 py-0.5 rounded text-[11px] border border-slate-300 text-slate-700 bg-white">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                          s.warning === "Kırmızı"
+                            ? "bg-red-50 text-red-700 border-red-300"
+                            : "bg-amber-50 text-amber-700 border-amber-300"
+                        }`}
+                      >
                         {s.warning}
                       </span>
                     )}

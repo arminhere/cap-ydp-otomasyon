@@ -128,7 +128,13 @@ export function DepartmentHeadPanoClient({
                     </span>
                   </td>
                   <td className="py-3 px-3">
-                    <span className="inline-block px-2 py-0.5 rounded text-[11px] border border-slate-300 text-slate-700 bg-white">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                        s.warning === "Kırmızı"
+                          ? "bg-red-50 text-red-700 border-red-300"
+                          : "bg-amber-50 text-amber-700 border-amber-300"
+                      }`}
+                    >
                       {s.warning}
                     </span>
                   </td>
