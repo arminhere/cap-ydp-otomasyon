@@ -135,10 +135,21 @@ export function CourseSelectionClient({
         </table>
       </div>
 
-      {/* Disclaimer Footnote */}
-      <p className="text-xs text-slate-500">
-        Geçilen ve muaf dersler listelenmez. Çakışma kontrolü sizin beyanınız ve koordinatör denetimiyle yapılır.
-      </p>
+      {/* Disclaimer Footnote & Course Request Link (Email L31) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
+        <p>
+          Geçilen ve muaf dersler listelenmez. Çakışma kontrolü sizin beyanınız ve koordinatör denetimiyle yapılır.
+        </p>
+        <p>
+          Katalogda veya protokolde bulunmayan bir ders için:{" "}
+          <a
+            href="/ogrenci/mesajlar"
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Koordinatöre Talep İlet
+          </a>
+        </p>
+      </div>
 
       {/* Bottom Bar: Total AKTS on Left, Buttons on Right */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">

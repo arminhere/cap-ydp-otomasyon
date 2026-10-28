@@ -68,6 +68,7 @@ model Student {
   admissionSemester Int                 @default(3) // 3, 4, 5 vb.
   admissionGano     Float               // Başvuru anındaki Ana Dal GANO'su
   admissionType     String              @default("ASIL") // ASIL | YEDEK
+  coordinatorNote   String?             // Koordinatörün özel notu (öğrenci görmez)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -339,4 +340,19 @@ model ProgramRule {
   effectiveFrom DateTime @default(now())
 
   @@unique([programId, ruleKey])
+}
+
+model ProgramRuleHistory {
+  id            String   @id @default(cuid())
+  ruleId        String
+  programId     String
+  ruleKey       String
+  oldValue      Float
+  newValue      Float
+  changedBy     String?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  @@index([ruleId])
+  @@index([programId, ruleKey])
 }

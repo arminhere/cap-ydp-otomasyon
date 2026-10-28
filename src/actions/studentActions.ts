@@ -158,3 +158,75 @@ export async function updateStudentProfileAction(
   revalidatePath("/ogrenci/ders-secimi");
   return { success: true };
 }
+
+export async function updateCoordinatorNoteAction(studentId: string, note: string) {
+  const actor = await requireUserWithRole(["COORDINATOR"]);
+
+  const before = await db.student.findUnique({
+    where: { id: studentId },
+    select: { coordinatorNote: true },
+  });
+
+  await db.student.update({
+    where: { id: studentId },
+    data: { coordinatorNote: note.trim() },
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "UPDATE_COORDINATOR_NOTE",
+    entityType: "Student",
+    entityId: studentId,
+    before: { coordinatorNote: before?.coordinatorNote },
+    after: { coordinatorNote: note.trim() },
+  });
+
+  revalidatePath(`/koordinator/ogrenci/${studentId}`);
+  return { success: true };
+}
+
+export async function executeAdminDecisionAction(
+  enrollmentId: string,
+  newStatus: string,
+  reasonNote: string
+) {
+  const actor = await requireUserWithRole(["COORDINATOR"]);
+
+  if (!reasonNote || reasonNote.trim().length === 0) {
+    return { error: "İdari karar için gerekçe ve dayanak kararı belirtilmesi zorunludur." };
+  }
+
+  const enrollment = await db.programEnrollment.findUnique({
+    where: { id: enrollmentId },
+    include: { student: true },
+  });
+
+  if (!enrollment) {
+    throw new Error("Kayıt bulunamadı.");
+  }
+
+  const beforeStatus = enrollment.status;
+
+  await db.programEnrollment.update({
+    where: { id: enrollmentId },
+    data: {
+      status: newStatus,
+      statusReason: reasonNote.trim(),
+    },
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "EXECUTE_ADMIN_DECISION",
+    entityType: "ProgramEnrollment",
+    entityId: enrollmentId,
+    before: { status: beforeStatus },
+    after: { status: newStatus, statusReason: reasonNote.trim() },
+  });
+
+  revalidatePath(`/koordinator/ogrenci/${enrollment.studentId}`);
+  revalidatePath("/koordinator/ogrenciler");
+  revalidatePath("/koordinator");
+  revalidatePath("/bolum-baskani/genel-bakis");
+  return { success: true };
+}

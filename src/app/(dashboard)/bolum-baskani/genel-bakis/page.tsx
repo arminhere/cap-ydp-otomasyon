@@ -1,5 +1,6 @@
 import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
+import { evaluateStudentRules, getProgramRules } from "@/lib/rules";
 import {
   DepartmentHeadPanoClient,
   DocumentRow,
@@ -19,7 +20,7 @@ export default async function DepartmentHeadOverviewPage() {
   const activeYdpCount = await db.programEnrollment.count({
     where: {
       status: "ACTIVE",
-      program: { type: "MINOR" },
+      program: { type: "YANDAL" },
     },
   });
 
@@ -33,13 +34,20 @@ export default async function DepartmentHeadOverviewPage() {
 
   const pendingCount = pendingDocCount + pendingSelCount;
 
-  // Fetch risky students (dismissed or low GANO)
+  // Rules from database
+  const capRules = await getProgramRules("CAP");
+
+  // Fetch risky students using official rule evaluation
   const students = await db.student.findMany({
     include: {
       enrollments: {
         include: {
           program: true,
-          termStatuses: { orderBy: { createdAt: "desc" }, take: 1 },
+          termStatuses: {
+            orderBy: { createdAt: "desc" },
+            take: 2,
+            include: { term: true },
+          },
         },
       },
     },
@@ -48,50 +56,33 @@ export default async function DepartmentHeadOverviewPage() {
   const riskStudents: RiskStudent[] = [];
   for (const s of students) {
     const enrollment = s.enrollments[0];
-    const progType = enrollment?.program.type === "CAP" ? "ÇAP" : "Yan Dal";
-    const gano = enrollment?.termStatuses[0]?.programGano;
+    if (!enrollment) continue;
 
-    if (enrollment?.status === "DISMISSED") {
+    const progType = enrollment.program.type === "CAP" ? "ÇAP" : "Yan Dal";
+    const statusLabel =
+      enrollment.status === "ACTIVE"
+        ? "Aktif"
+        : enrollment.status === "REMOVED"
+        ? "Silinme bekliyor"
+        : enrollment.status === "FROZEN"
+        ? "Donduruldu"
+        : "Aktif";
+
+    const studentAlerts = evaluateStudentRules(enrollment, capRules);
+
+    if (studentAlerts.length > 0) {
+      const primaryAlert =
+        studentAlerts.find((a) => a.level === "Kırmızı") || studentAlerts[0];
+
       riskStudents.push({
         id: s.id,
         name: `${s.firstName} ${s.lastName}`,
         programType: progType,
-        status: "Silinme bekliyor",
-        warning: "Kırmızı",
-        reason: "İki dönem üst üste ders seçilmedi (Yönerge m.9)",
-      });
-    } else if (gano && gano < 2.6) {
-      riskStudents.push({
-        id: s.id,
-        name: `${s.firstName} ${s.lastName}`,
-        programType: progType,
-        status: "Aktif",
-        warning: "Sarı",
-        reason: `GANO 2.50 eşiğine yakın (${gano.toFixed(2)})`,
+        status: statusLabel as "Silinme bekliyor" | "Aktif",
+        warning: primaryAlert.level,
+        reason: `${primaryAlert.text} (${primaryAlert.sourceArticle})`,
       });
     }
-  }
-
-  // Ensure wireframe default example data is visible if dataset is small
-  if (riskStudents.length === 0) {
-    riskStudents.push(
-      {
-        id: "mock-d",
-        name: "Öğrenci D",
-        programType: "Yan Dal",
-        status: "Silinme bekliyor",
-        warning: "Kırmızı",
-        reason: "İki dönem üst üste ders almadı",
-      },
-      {
-        id: "mock-e",
-        name: "Öğrenci E",
-        programType: "ÇAP",
-        status: "Aktif",
-        warning: "Sarı",
-        reason: "GANO 2.50 eşiğine yakın",
-      }
-    );
   }
 
   const riskyCount = riskStudents.length;

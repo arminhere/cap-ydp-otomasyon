@@ -113,3 +113,66 @@ export async function recordTermGanoAction(
 
   return { success: true };
 }
+
+export async function recordRetroactiveAttemptAction(
+  enrollmentId: string,
+  courseId: string,
+  termId: string,
+  letterGrade: string,
+  status: "PASSED" | "FAILED" | "EXEMPT"
+) {
+  const actor = await requireUserWithRole(["COORDINATOR"]);
+
+  const enrollment = await db.programEnrollment.findUnique({
+    where: { id: enrollmentId },
+    include: {
+      protocol: {
+        include: { items: true },
+      },
+    },
+  });
+
+  if (!enrollment) {
+    throw new Error("Öğrenci kaydı bulunamadı.");
+  }
+
+  // Find corresponding protocol item or match by courseId
+  let protocolItem = enrollment.protocol.items.find((i) => i.courseId === courseId);
+  if (!protocolItem) {
+    // If elective slot or not directly matched, pick the first applicable item
+    protocolItem = enrollment.protocol.items[0];
+  }
+
+  const cleanGrade = letterGrade.trim().toUpperCase();
+
+  const attempt = await db.courseAttempt.create({
+    data: {
+      enrollmentId,
+      protocolItemId: protocolItem ? protocolItem.id : enrollment.protocol.items[0].id,
+      courseId,
+      termId,
+      letterGrade: cleanGrade,
+      status,
+      verifiedBy: actor.id,
+      verifiedAt: new Date(),
+    },
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "RECORD_RETROACTIVE_COURSE_ATTEMPT",
+    entityType: "CourseAttempt",
+    entityId: attempt.id,
+    after: {
+      courseId,
+      termId,
+      letterGrade: cleanGrade,
+      status,
+      verifiedBy: actor.id,
+    },
+  });
+
+  revalidatePath(`/koordinator/ogrenci/${enrollment.studentId}`);
+  revalidatePath("/ogrenci/ilerleme");
+  return { success: true };
+}

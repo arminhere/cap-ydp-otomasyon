@@ -116,7 +116,14 @@ export function DepartmentHeadPanoClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredRisky.map((s) => (
+              {filteredRisky.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-slate-400">
+                    Aktif riskli veya uyarı gerektiren öğrenci bulunmamaktadır.
+                  </td>
+                </tr>
+              ) : (
+                filteredRisky.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-50/50">
                   <td className="py-3 px-3">
                     <span className="text-blue-600 font-medium">{s.name}</span>
@@ -140,7 +147,8 @@ export function DepartmentHeadPanoClient({
                   </td>
                   <td className="py-3 px-3 text-slate-600">[{s.reason}]</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>

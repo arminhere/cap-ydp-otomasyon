@@ -1,5 +1,6 @@
 import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
+import { evaluateStudentRules, getProgramRules } from "@/lib/rules";
 import {
   CoordinatorPanoClient,
   PendingApproval,
@@ -32,13 +33,13 @@ export default async function CoordinatorPanoPage() {
       type: "Ders seçim talebi",
       dateStr: s.submittedAt
         ? new Date(s.submittedAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })
-        : "11 Eki",
+        : "Yeni",
       link: "/koordinator/onaylar",
     })),
     ...pendingDocs.map((d) => ({
       id: `doc-${d.id}`,
       studentName: `${d.student.firstName} ${d.student.lastName}`,
-      type: d.documentType === "TRANSCRIPT" ? "Transkript" : "İmzalı protokol",
+      type: d.documentType === "TRANSCRIPT" ? "Transkript Belgesi" : d.label || "Resmi Belge",
       dateStr: new Date(d.uploadedAt).toLocaleDateString("tr-TR", {
         day: "numeric",
         month: "short",
@@ -47,14 +48,21 @@ export default async function CoordinatorPanoPage() {
     })),
   ];
 
-  // 2. Fetch all students with enrollments, warnings, and attempts
+  // 2. Fetch configurable rules from database
+  const capRules = await getProgramRules("CAP");
+
+  // 3. Fetch all students with enrollments, term statuses, and attempts
   const allStudents = await db.student.findMany({
     include: {
       homeDepartment: true,
       enrollments: {
         include: {
           program: true,
-          termStatuses: { orderBy: { createdAt: "desc" }, take: 1 },
+          termStatuses: {
+            orderBy: { createdAt: "desc" },
+            take: 2,
+            include: { term: true },
+          },
         },
       },
     },
@@ -66,30 +74,36 @@ export default async function CoordinatorPanoPage() {
 
   for (const s of allStudents) {
     const enrollment = s.enrollments[0];
-    const progType = enrollment?.program.type === "CAP" ? "ÇAP" : "Yan Dal";
-    const status = enrollment?.status === "DISMISSED" ? "Silinme bekliyor" : "Aktif";
-    const gano = enrollment?.termStatuses[0]?.programGano;
+    if (!enrollment) continue;
+
+    const progType = enrollment.program.type === "CAP" ? "ÇAP" : "Yan Dal";
+    const statusLabel =
+      enrollment.status === "ACTIVE"
+        ? "Aktif"
+        : enrollment.status === "REMOVED"
+        ? "Silinme bekliyor"
+        : enrollment.status === "FROZEN"
+        ? "Donduruldu"
+        : "Aktif";
+
+    // Dynamic rule evaluation based on official regulations
+    const studentAlerts = evaluateStudentRules(enrollment, capRules);
 
     let warningLevel: "—" | "Sarı" | "Kırmızı" = "—";
     let warningMsg = "";
 
-    if (enrollment?.status === "DISMISSED") {
-      warningLevel = "Kırmızı";
-      warningMsg = "iki dönem ders almadı";
+    if (studentAlerts.length > 0) {
+      // Pick highest severity alert (Kırmızı > Sarı)
+      const primaryAlert =
+        studentAlerts.find((a) => a.level === "Kırmızı") || studentAlerts[0];
+      warningLevel = primaryAlert.level;
+      warningMsg = `${primaryAlert.text} (${primaryAlert.sourceArticle})`;
+
       warnings.push({
         id: `warn-${s.id}`,
         studentName: `${s.firstName} ${s.lastName}`,
-        level: "Kırmızı",
-        text: warningMsg,
-      });
-    } else if (gano && gano < 2.6) {
-      warningLevel = "Sarı";
-      warningMsg = `GANO eşiğe yakın (${gano.toFixed(2)} / 2.50)`;
-      warnings.push({
-        id: `warn-${s.id}`,
-        studentName: `${s.firstName} ${s.lastName}`,
-        level: "Sarı",
-        text: warningMsg,
+        level: primaryAlert.level,
+        text: `${primaryAlert.text} [${primaryAlert.sourceArticle}]`,
       });
     }
 
@@ -98,28 +112,10 @@ export default async function CoordinatorPanoPage() {
       name: `${s.firstName} ${s.lastName}`,
       programType: progType,
       homeDepartment: s.homeDepartment?.name || "[Bölüm]",
-      status: status as "Aktif" | "Silinme bekliyor",
+      status: statusLabel as "Aktif" | "Silinme bekliyor",
       warning: warningLevel,
       warningText: warningMsg,
     });
-  }
-
-  // Ensure default mock examples from wireframe are present if student list is small
-  if (warnings.length === 0) {
-    warnings.push(
-      {
-        id: "mock-1",
-        studentName: "Öğrenci D",
-        level: "Kırmızı",
-        text: "iki dönem ders almadı",
-      },
-      {
-        id: "mock-2",
-        studentName: "Öğrenci E",
-        level: "Sarı",
-        text: "GANO eşiğe yakın",
-      }
-    );
   }
 
   return (
