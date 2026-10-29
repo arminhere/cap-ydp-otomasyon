@@ -15,6 +15,10 @@ export async function sendMessageAction(
     throw new Error("UNAUTHORIZED: Oturum açmanız gerekmektedir.");
   }
 
+  if (user.role === "DEPARTMENT_HEAD") {
+    throw new Error("FORBIDDEN: Bölüm Başkanı hesabı salt okunurdur; mesaj gönderme yetkisi yoktur.");
+  }
+
   // Student can only message in their own thread
   if (user.role === "STUDENT" && user.studentId !== targetStudentId) {
     throw new Error("FORBIDDEN: Başka bir öğrenci adına mesaj gönderemezsiniz.");

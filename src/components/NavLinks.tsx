@@ -30,7 +30,7 @@ const studentNav: NavItem[] = [
 
 const departmentHeadNav: NavItem[] = [
   { href: "/bolum-baskani/genel-bakis", label: "Pano" },
-  { href: "/koordinator/ogrenciler", label: "Öğrenciler", matchPrefixes: ["/koordinator/ogrenciler", "/koordinator/ogrenci"] },
+  { href: "/bolum-baskani/ogrenciler", label: "Öğrenciler", matchPrefixes: ["/bolum-baskani/ogrenciler"] },
   { href: "/bolum-baskani/denetim", label: "Belgeler & Denetim" },
   { href: "/yonergeler", label: "Yönergeler" },
 ];

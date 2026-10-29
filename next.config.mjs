@@ -5,6 +5,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    outputFileTracingIncludes: {
+      '/*': ['./documents/**/*'],
+    },
   },
 };
 

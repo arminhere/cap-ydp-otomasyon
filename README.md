@@ -1,7 +1,8 @@
 # ÇAP ve Yan Dal Yönetim Sistemi (Student Tracking & Management System)
 
 > **Selçuk Üniversitesi Mühendislik Fakültesi — Bilgisayar Mühendisliği Bölümü**  
-> *Double Major (ÇAP) and Minor (YDP) Student Tracking Automation — Phase 1 MVP*
+> *Double Major (ÇAP) and Minor (YDP) Student Tracking Automation — Phase 1 MVP*  
+> **Live Deployment:** [https://cap-ydp-otomasyon.vercel.app/](https://cap-ydp-otomasyon.vercel.app/)
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue.svg)]()
@@ -56,7 +57,7 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-*The default `.env` is pre-configured to use local SQLite (`dev.db`).*
+*The database is configured for PostgreSQL (Neon Serverless PostgreSQL). Ensure your `DATABASE_URL` is set in `.env`.*
 
 ### 4. Initialize & Seed the Database
 Apply the schema and populate all official protocols, courses, and demo test accounts:
@@ -102,7 +103,7 @@ All accounts use strictly synthetic data. You can log in using these credentials
 | `npm run db:push` | Synchronizes the Prisma schema with your database. |
 | `npm run db:generate` | Generates the typed Prisma Client. |
 | `npm run db:seed` | Inserts official protocols, courses, and demo accounts into the database. |
-| `npm test` | Runs the full automated test suite (6/6 passing unit and E2E integration tests). |
+| `npm test` | Runs the full automated test suite (7/7 passing unit and E2E integration tests). |
 | `npx prisma studio` | Opens an interactive visual database browser at `http://localhost:5555`. |
 
 ---

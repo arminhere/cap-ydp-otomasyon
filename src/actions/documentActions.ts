@@ -21,6 +21,10 @@ export async function uploadDocumentAction(formData: FormData) {
     throw new Error("UNAUTHORIZED: Oturum açmanız gerekmektedir.");
   }
 
+  if (user.role === "DEPARTMENT_HEAD") {
+    throw new Error("FORBIDDEN: Bölüm Başkanı hesabı salt okunurdur; belge yükleme yetkisi yoktur.");
+  }
+
   const file = formData.get("file") as File | null;
   const documentType = formData.get("documentType") as string;
   const label = formData.get("label") as string;

@@ -71,4 +71,9 @@ test("Authentication tests: credentials, generic errors, and account lockout", a
   assert.equal(validStudent.success, true);
   assert.equal(validStudent.user?.role, "STUDENT");
   assert.ok(validStudent.user?.studentId);
+
+  // Test department head login
+  const validHead = await authenticateUser("baskan@selcuk.edu.tr", "Test1234!");
+  assert.equal(validHead.success, true);
+  assert.equal(validHead.user?.role, "DEPARTMENT_HEAD");
 });

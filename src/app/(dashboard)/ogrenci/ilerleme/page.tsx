@@ -1,6 +1,7 @@
 import { requireUserWithRole } from "@/lib/session";
 import { db } from "@/lib/db";
 import Link from "next/link";
+import { History, BookOpen, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 export default async function StudentProgressPage() {
   const user = await requireUserWithRole(["STUDENT"]);
@@ -179,7 +180,17 @@ export default async function StudentProgressPage() {
                       {courseCode || "[Kod]"}
                     </td>
                     <td className="py-3 px-4 text-slate-800 font-medium">
-                      {course ? course.name : item.slotLabel || "[Teknik seçmeli yuvası]"}
+                      <div>{course ? course.name : item.slotLabel || "[Teknik seçmeli yuvası]"}</div>
+                      {courseAttempts.length > 1 && (
+                        <div className="mt-1 text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-slate-600">Tekrar:</span>
+                          {courseAttempts.map((att) => (
+                            <span key={att.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
+                              {att.term.academicYear} {att.term.semester}: <strong>{att.letterGrade || "—"}</strong> ({att.status === "PASSED" ? "Geçti" : att.status === "FAILED" ? "Kaldı" : "Kayıtlı"})
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       [{item.akts}]
@@ -198,6 +209,79 @@ export default async function StudentProgressPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Repeated Attempts & Full Course History Card (Professor Requirement) */}
+      <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-blue-600" />
+            <h2 className="text-base font-bold text-slate-900">
+              Dönemlik Ders Kayıt ve Deneme Geçmişi
+            </h2>
+          </div>
+          <span className="text-xs text-slate-500 font-medium">
+            Toplam {enrollment.attempts.length} ders denemesi
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Hoca direktifi: Bir ders birden fazla kez alındığında her deneme; alındığı akademik yıl, dönem, harf notu ve başarı durumuyla birlikte ayrı ayrı izlenir.
+        </p>
+
+        {enrollment.attempts.length === 0 ? (
+          <p className="text-sm text-slate-400 py-3 text-center">Henüz onaylanmış bir ders denemeniz bulunmuyor.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                  <th className="py-2.5 px-3">Akademik Dönem</th>
+                  <th className="py-2.5 px-3">Ders Kodu</th>
+                  <th className="py-2.5 px-3">Ders Adı</th>
+                  <th className="py-2.5 px-3">AKTS</th>
+                  <th className="py-2.5 px-3">Harf Notu</th>
+                  <th className="py-2.5 px-3">Durum</th>
+                  <th className="py-2.5 px-3">Kayıt Türü</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {enrollment.attempts.map((att) => {
+                  const isPassed = att.status === "PASSED";
+                  const isFailed = att.status === "FAILED";
+                  return (
+                    <tr key={att.id} className="hover:bg-slate-50 transition">
+                      <td className="py-2.5 px-3 text-slate-700 font-semibold">
+                        {att.term.academicYear} {att.term.semester === "GUZ" ? "Güz" : "Bahar"}
+                      </td>
+                      <td className="py-2.5 px-3 text-blue-900 font-bold">{att.course.code}</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-800 font-medium">{att.course.name}</td>
+                      <td className="py-2.5 px-3 text-slate-600">{att.course.akts}</td>
+                      <td className="py-2.5 px-3 font-bold text-slate-900">{att.letterGrade || "—"}</td>
+                      <td className="py-2.5 px-3 font-sans">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            isPassed
+                              ? "bg-emerald-100 text-emerald-800"
+                              : isFailed
+                              ? "bg-red-100 text-red-800"
+                              : att.status === "EXEMPT"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {isPassed ? "Geçti" : isFailed ? "Kaldı" : att.status === "EXEMPT" ? "Muaf" : "Kayıtlı"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-sans text-slate-400 text-[11px]">
+                        {att.verifiedBy ? "Koordinatör Onaylı" : "Kayıtlı"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Bottom Link & Disclaimer */}
