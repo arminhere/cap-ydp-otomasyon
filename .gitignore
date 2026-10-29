@@ -43,3 +43,8 @@ bmu_2.txt
 bmu_2*.txt
 emails from professor.txt
 
+# Agent persistent memory
+brain/
+AGENTS.md
+CLAUDE.md
+
