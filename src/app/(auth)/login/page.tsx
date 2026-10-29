@@ -3,7 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useState } from "react";
 import { loginAction } from "@/actions/authActions";
-import { GraduationCap, ShieldCheck, UserCheck, BookOpen, Lock, Mail, AlertCircle } from "lucide-react";
+import { GraduationCap, ShieldCheck, UserCheck, BookOpen, Lock, Mail, AlertCircle, Loader2 } from "lucide-react";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -11,9 +11,10 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition"
+      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition"
     >
-      {pending ? "Giriş yapılıyor..." : "Giriş Yap"}
+      {pending && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+      <span>{pending ? "Giriş yapılıyor..." : "Giriş Yap"}</span>
     </button>
   );
 }

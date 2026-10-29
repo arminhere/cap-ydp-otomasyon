@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 
 export interface RiskStudent {
   id: string;
@@ -119,7 +120,11 @@ export function DepartmentHeadPanoClient({
               {filteredRisky.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-6 text-center text-slate-400">
-                    Aktif riskli veya uyarı gerektiren öğrenci bulunmamaktadır.
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <CheckCircle2 className="w-7 h-7 text-emerald-500/80 mb-1.5" />
+                      <p className="text-xs font-semibold text-slate-700">Mevzuat Riski Bulunmuyor</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Bölümümüz ÇAP ve Yan Dal öğrencilerinin tümü başarı şartlarını sağlamaktadır.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (

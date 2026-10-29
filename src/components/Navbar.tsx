@@ -9,6 +9,7 @@ export async function Navbar() {
   if (!user) return null;
 
   let displayName = user.email;
+  let roleTitle = "Koordinatör";
   if (user.role === "STUDENT") {
     const student = await db.student.findUnique({
       where: { userId: user.id },
@@ -17,27 +18,31 @@ export async function Navbar() {
     if (student) {
       displayName = `${student.firstName} ${student.lastName}`;
     }
+    roleTitle = `${displayName} · Öğrenci`;
+  } else if (user.role === "DEPARTMENT_HEAD") {
+    roleTitle = "Bölüm Başkanı · Salt okunur";
   }
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
-          {/* Brand & Dynamic Left Navigation */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="font-bold text-slate-900 text-base tracking-tight hover:text-blue-600 transition">
-              ÇAP / Yan Dal Paneli
-            </Link>
+          {/* Brand */}
+          <Link
+            href="/"
+            className="font-bold text-slate-900 text-base tracking-tight hover:text-blue-600 transition flex items-center gap-2 shrink-0"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
+            ÇAP / Yan Dal Paneli
+          </Link>
 
-            <NavLinks role={user.role} />
-          </div>
+          {/* Navigation (Desktop links & Mobile toggle) */}
+          <NavLinks role={user.role} roleTitle={roleTitle} />
 
-          {/* User Role Indicator & Logout */}
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-slate-700 font-medium">
-              {user.role === "COORDINATOR" && "Koordinatör"}
-              {user.role === "STUDENT" && `${displayName} · Öğrenci`}
-              {user.role === "DEPARTMENT_HEAD" && "Bölüm Başkanı · Salt okunur"}
+          {/* Desktop User Role Indicator & Logout */}
+          <div className="hidden md:flex items-center gap-3 text-sm">
+            <span className="text-slate-700 font-medium text-xs bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              {roleTitle}
             </span>
 
             <Link
@@ -50,7 +55,7 @@ export async function Navbar() {
             <form action={logoutAction} className="inline">
               <button
                 type="submit"
-                className="text-blue-600 hover:text-blue-800 font-medium transition cursor-pointer"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition cursor-pointer"
               >
                 Çıkış
               </button>

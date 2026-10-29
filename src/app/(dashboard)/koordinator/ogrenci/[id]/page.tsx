@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import {
   User,
@@ -16,6 +17,7 @@ import {
   PlusCircle,
   Shield,
   FileSignature,
+  ArrowLeft,
 } from "lucide-react";
 import {
   recordGradeAction,
@@ -93,6 +95,21 @@ export default async function CoordinatorStudentDetailPage({
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-xs text-slate-500">
+        <Link
+          href="/koordinator/ogrenciler"
+          className="inline-flex items-center gap-1.5 font-medium text-slate-600 hover:text-blue-600 transition"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Öğrenci Kütüğüne Dön
+        </Link>
+        <span className="text-slate-300">/</span>
+        <span className="text-slate-500 font-medium">
+          {student.firstName} {student.lastName} ({student.programStudentNo})
+        </span>
+      </div>
+
       {/* Student Profile Header */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">

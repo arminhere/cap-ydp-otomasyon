@@ -102,7 +102,11 @@ export default async function StudentDocumentsPage() {
         </h2>
 
         {!student?.documents || student.documents.length === 0 ? (
-          <p className="text-sm text-slate-400 py-6 text-center">Henüz bir belge yüklemediniz.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50/60 rounded-lg border border-dashed border-slate-200">
+            <FileText className="w-8 h-8 text-slate-300 mb-1.5" />
+            <p className="text-xs font-semibold text-slate-700">Yüklenmiş Belge Yok</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Henüz sisteme bir resmi evrak veya transkript belgesi yüklemediniz.</p>
+          </div>
         ) : (
           <div className="divide-y divide-slate-100 text-sm">
             {student.documents.map((doc) => (

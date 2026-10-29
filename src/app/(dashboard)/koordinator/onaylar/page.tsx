@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { CheckSquare, FileText, AlertCircle, Check, X, Download } from "lucide-react";
+import { CheckSquare, FileText, AlertCircle, Check, X, Download, CheckCircle2 } from "lucide-react";
 import { approveCourseSelectionAction, rejectCourseSelectionAction } from "@/actions/courseSelectionActions";
 import { reviewDocumentAction } from "@/actions/documentActions";
 
@@ -46,7 +46,11 @@ export default async function CoordinatorApprovalsPage() {
 
         {pendingRequests.length === 0 ? (
           <p className="text-sm text-slate-400 py-6 text-center">
-            Şu anda onay bekleyen bir ders seçim talebi bulunmamaktadır.
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500/80 mb-1.5" />
+            <p className="text-xs font-semibold text-slate-700">Bekleyen Ders Seçim Talebi Yok</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Öğrencilerden gelen tüm dönemlik ders kayıtları incelenip onaylanmıştır.</p>
+          </div>
           </p>
         ) : (
           <div className="divide-y divide-slate-100 space-y-4">
@@ -122,7 +126,11 @@ export default async function CoordinatorApprovalsPage() {
 
         {pendingDocuments.length === 0 ? (
           <p className="text-sm text-slate-400 py-6 text-center">
-            Şu anda onay bekleyen bir öğrenci belgesi bulunmamaktadır.
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500/80 mb-1.5" />
+            <p className="text-xs font-semibold text-slate-700">Bekleyen Belge Bulunmuyor</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Öğrenciler tarafından yüklenen tüm transkript ve resmi evraklar onaylanmıştır.</p>
+          </div>
           </p>
         ) : (
           <div className="divide-y divide-slate-100 text-sm">

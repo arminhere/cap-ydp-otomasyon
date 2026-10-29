@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
 
 export interface StudentRow {
   id: string;
@@ -54,7 +55,11 @@ export function CoordinatorPanoClient({ pendingApprovals, warnings, students }: 
         <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-5">
           <h2 className="text-sm font-bold text-slate-900 mb-3">Bekleyen onaylar</h2>
           {pendingApprovals.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4">Bekleyen yeni onay talebi bulunmamaktadır.</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center bg-slate-50/60 rounded-lg border border-dashed border-slate-200">
+              <CheckCircle2 className="w-7 h-7 text-emerald-500/80 mb-1.5" />
+              <p className="text-xs font-semibold text-slate-700">Tüm Onaylar Güncel</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Bekleyen yeni ders seçimi veya belge talebi bulunmamaktadır.</p>
+            </div>
           ) : (
             <table className="w-full text-left text-xs border-collapse">
               <tbody className="divide-y divide-slate-100">
@@ -82,7 +87,11 @@ export function CoordinatorPanoClient({ pendingApprovals, warnings, students }: 
         <div className="bg-white rounded-lg border border-slate-200 p-5">
           <h2 className="text-sm font-bold text-slate-900 mb-3">Uyarılar</h2>
           {warnings.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4">Kritik uyarı bulunmamaktadır.</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center bg-slate-50/60 rounded-lg border border-dashed border-slate-200">
+              <ShieldCheck className="w-7 h-7 text-blue-500/80 mb-1.5" />
+              <p className="text-xs font-semibold text-slate-700">Mevzuat Uyarısı Yok</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Tüm öğrencilerin GANO ve dönem şartları yönetmeliğe uygundur.</p>
+            </div>
           ) : (
             <div className="space-y-2.5 text-xs">
               {warnings.map((w) => (
