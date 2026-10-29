@@ -19,7 +19,7 @@ export function createSamplePdf(
 0 -20 Td
 (Bolum: Bilgisayar Muhendisligi - CAP) Tj
 0 -20 Td
-(Donem: 2025-2026 Guz) Tj
+(Donem: 2026-2027 Guz) Tj
 0 -30 Td
 /F1 11 Tf
 (Dersler ve Notlar:) Tj

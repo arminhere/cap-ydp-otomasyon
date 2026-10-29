@@ -68,7 +68,7 @@ export default async function StudentDocumentsPage() {
               type="text"
               name="label"
               required
-              placeholder="Örn: 2025-2026 Güz İmzalı Ders Kayıt Formu"
+              placeholder="Örn: 2026-2027 Güz İmzalı Ders Kayıt Formu"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>

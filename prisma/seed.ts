@@ -167,8 +167,8 @@ async function main() {
     },
   });
 
-  // Clean existing items if re-seeding
-  await prisma.protocolItem.deleteMany({ where: { protocolId: protocol.id } });
+  // Only create protocol items if not already populated
+  const existingItemsCount = await prisma.protocolItem.count({ where: { protocolId: protocol.id } });
 
   const protocolItemsData = [
     { code: "3301156", sem: 1, akts: 4, fn: null },
@@ -201,40 +201,55 @@ async function main() {
     { code: "3301853", sem: 8, akts: 5, fn: null },
   ];
 
-  let sortIndex = 1;
-  for (const item of protocolItemsData) {
-    await prisma.protocolItem.create({
-      data: {
-        protocolId: protocol.id,
-        itemType: item.code ? "COURSE" : "ELECTIVE_SLOT",
-        courseId: item.code ? dbCourses[item.code]?.id : null,
-        slotLabel: item.slot ?? null,
-        akts: item.akts,
-        recommendedSemester: item.sem,
-        footnoteNo: item.fn,
-        sortOrder: sortIndex++,
-      },
-    });
+  if (existingItemsCount === 0) {
+    let sortIndex = 1;
+    for (const item of protocolItemsData) {
+      await prisma.protocolItem.create({
+        data: {
+          protocolId: protocol.id,
+          itemType: item.code ? "COURSE" : "ELECTIVE_SLOT",
+          courseId: item.code ? dbCourses[item.code]?.id : null,
+          slotLabel: item.slot ?? null,
+          akts: item.akts,
+          recommendedSemester: item.sem,
+          footnoteNo: item.fn,
+          sortOrder: sortIndex++,
+        },
+      });
+    }
+    console.log("EEM -> BM Protocol created with 28 items (135 AKTS).");
   }
-  console.log("EEM -> BM Protocol created with 28 items (135 AKTS).");
 
-  // 8. Create Academic Term (2025-2026 Güz)
+  // 8. Create Academic Term (2026-2027 Güz)
   const currentTerm = await prisma.academicTerm.upsert({
     where: {
       academicYear_semester: {
-        academicYear: "2025-2026",
+        academicYear: "2026-2027",
         semester: "GUZ",
       },
     },
-    update: { isCurrent: true },
+    update: {
+      isCurrent: true,
+      startDate: new Date("2026-09-15"),
+      selectionOpenAt: new Date("2026-09-15"),
+      selectionCloseAt: new Date("2026-10-31"),
+    },
     create: {
-      academicYear: "2025-2026",
+      academicYear: "2026-2027",
       semester: "GUZ",
-      startDate: new Date("2025-09-15"),
-      selectionOpenAt: new Date("2025-09-15"),
-      selectionCloseAt: new Date("2025-10-31"),
+      startDate: new Date("2026-09-15"),
+      selectionOpenAt: new Date("2026-09-15"),
+      selectionCloseAt: new Date("2026-10-31"),
       isCurrent: true,
     },
+  });
+
+  // Ensure any previous terms are not marked as current
+  await prisma.academicTerm.updateMany({
+    where: {
+      id: { not: currentTerm.id },
+    },
+    data: { isCurrent: false },
   });
 
   // 9. Create Synthetic Student Account

@@ -81,7 +81,7 @@ export default async function StudentCourseSelectionPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Ders Seç</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Dönem: [{activeTerm.academicYear} · {semesterName}] · Seçim son tarihi: [31 Ekim 2026]
+          Dönem: [{activeTerm.academicYear} · {semesterName}] · Seçim son tarihi: [{new Date(activeTerm.selectionCloseAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}]
         </p>
       </div>
 

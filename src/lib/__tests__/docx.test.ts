@@ -9,7 +9,7 @@ test("FORM01 docx generation produces valid, openable Word document", async () =
     studentName: "Ali Demir",
     homeFaculty: "Teknoloji Fakültesi",
     homeDepartment: "Elektrik-Elektronik Mühendisliği",
-    academicYear: "2025-2026",
+    academicYear: "2026-2027",
     semester: "GUZ" as const,
     dateStr: "25.10.2026",
     courses: [
@@ -30,6 +30,6 @@ test("FORM01 docx generation produces valid, openable Word document", async () =
   assert.ok(docXml);
   assert.ok(docXml.includes("231202099"), "Must include student number");
   assert.ok(docXml.includes("Ali Demir"), "Must include student name");
-  assert.ok(docXml.includes("2025-2026"), "Must include academic year");
+  assert.ok(docXml.includes("2026-2027"), "Must include academic year");
   assert.ok(docXml.includes("3301156"), "Must include course code");
 });
