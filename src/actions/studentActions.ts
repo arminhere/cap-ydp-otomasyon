@@ -230,3 +230,74 @@ export async function executeAdminDecisionAction(
   revalidatePath("/bolum-baskani/genel-bakis");
   return { success: true };
 }
+
+
+export async function deleteStudentAction(studentId: string) {
+  const actor = await requireUserWithRole(["COORDINATOR"]);
+
+  const student = await db.student.findUnique({
+    where: { id: studentId },
+    include: {
+      user: true,
+      enrollments: {
+        include: {
+          selectionRequests: true,
+          attempts: true,
+          termStatuses: true,
+        },
+      },
+      documents: true,
+      messageThreads: true,
+    },
+  });
+
+  if (!student) {
+    return { error: "Öğrenci bulunamadı." };
+  }
+
+  const enrollmentIds = student.enrollments.map((e) => e.id);
+  const requestIds = student.enrollments.flatMap((e) => e.selectionRequests.map((r) => r.id));
+  const documentIds = student.documents.map((d) => d.id);
+
+  await db.$transaction(async (tx) => {
+    // 1. Delete associated audit logs to prevent foreign key errors
+    await tx.auditLog.deleteMany({
+      where: {
+        OR: [
+          { actorId: student.userId },
+          { entityId: student.userId },
+          { entityId: student.id },
+          ...enrollmentIds.map((id) => ({ entityId: id })),
+          ...requestIds.map((id) => ({ entityId: id })),
+          ...documentIds.map((id) => ({ entityId: id })),
+        ],
+      },
+    });
+
+    // 2. Delete user (student, enrollments, documents, attempts cascade automatically)
+    await tx.user.delete({
+      where: { id: student.userId },
+    });
+  });
+
+  // Log the deletion action by coordinator
+  await logAudit({
+    actorId: actor.id,
+    action: "DELETE_STUDENT",
+    entityType: "Student",
+    entityId: studentId,
+    before: {
+      name: `${student.firstName} ${student.lastName}`,
+      mainStudentNo: student.mainStudentNo,
+      programStudentNo: student.programStudentNo,
+      email: student.user.email,
+    },
+  });
+
+  revalidatePath("/koordinator/ogrenciler");
+  revalidatePath("/koordinator");
+  revalidatePath("/bolum-baskani/ogrenciler");
+  revalidatePath("/bolum-baskani/genel-bakis");
+
+  return { success: true };
+}

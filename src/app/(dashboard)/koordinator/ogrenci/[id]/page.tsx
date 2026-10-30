@@ -24,6 +24,7 @@ import {
   recordTermGanoAction,
   recordRetroactiveAttemptAction,
 } from "@/actions/gradeActions";
+import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 import { reviewDocumentAction } from "@/actions/documentActions";
 import { sendMessageAction } from "@/actions/messageActions";
 import {
@@ -548,6 +549,24 @@ export default async function CoordinatorStudentDetailPage({
                 Gönder
               </button>
             </form>
+          </div>
+
+          {/* Danger Zone: Delete Student */}
+          <div className="bg-white rounded-xl border border-red-200 shadow-sm p-6 space-y-2.5">
+            <h2 className="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-red-600" /> Tehlikeli Bölge
+            </h2>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Yanlışlıkla eklenen veya test amaçlı açılan öğrenci kaydını ve bağlı tüm verileri sistemden kalıcı olarak siler.
+            </p>
+            <div className="pt-1">
+              <DeleteStudentButton
+                studentId={student.id}
+                studentName={`${student.firstName} ${student.lastName}`}
+                redirectTo="/koordinator/ogrenciler"
+                variant="card"
+              />
+            </div>
           </div>
         </div>
       </div>

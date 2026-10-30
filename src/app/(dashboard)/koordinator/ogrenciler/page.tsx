@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { Users, UserPlus, CheckCircle2, ArrowRight } from "lucide-react";
 import { createStudentAction } from "@/actions/studentActions";
+import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 
 export default async function CoordinatorStudentsPage() {
   const students = await db.student.findMany({
@@ -246,12 +247,19 @@ export default async function CoordinatorStudentsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <Link
-                    href={`/koordinator/ogrenci/${s.id}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-blue-50 text-blue-700 hover:text-blue-900 rounded-lg border border-slate-200 transition"
-                  >
-                    Öğrenci Kartı <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      href={`/koordinator/ogrenci/${s.id}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-blue-50 text-blue-700 hover:text-blue-900 rounded-lg border border-slate-200 transition"
+                    >
+                      Öğrenci Kartı <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                    <DeleteStudentButton
+                      studentId={s.id}
+                      studentName={`${s.firstName} ${s.lastName}`}
+                      variant="table"
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
